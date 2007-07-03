@@ -6,7 +6,8 @@
 
 Name:		eclipse-nlspackager
 Version:	0.1.4
-Release:        %mkrel 2.1
+Release:        %mkrel 2.2
+Epoch:          0
 Summary:	Eclipse NLS package generator
 Group:		Development/Java
 License:	Eclipse Public License
@@ -21,7 +22,15 @@ BuildRequires:		eclipse-pde
 BuildRequires:		java-devel >= 1.4.2
 
 Requires:		eclipse-rcp
-BuildArch:		noarch
+
+%if %{gcj_support}
+Requires(post): java-gcj-compat
+Requires(postun): java-gcj-compat
+BuildRequires:  java-gcj-compat-devel
+%else
+BuildArch:      noarch
+BuildRequires:  java-devel
+%endif
 
 %description
 Language pack zips from eclipse.org are grouped by many different
@@ -85,10 +94,27 @@ install -D -d -m 755 \
 install -p SDK/plugins/org.eclipse.linuxtools.nlspackager_%{version}.jar \
 	$RPM_BUILD_ROOT%{eclipse_base}/plugins/
 
+%if %{gcj_support}
+%{_bindir}/aot-compile-rpm
+%endif
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%if %{gcj_support}
+%post
+%{update_gcjdb}
+
+%postun
+%{clean_gcjdb}
+%endif
+
 %files
-%defattr(-,root,root)
-%{eclipse_base}/plugins/org.eclipse.linuxtools.nlspackager_%{version}.jar
+%defattr(0644,root,root,0755)
 %doc nlspackager/LICENSE nlspackager/ChangeLog
+%{eclipse_base}/plugins/org.eclipse.linuxtools.nlspackager_%{version}.jar
+%if %{gcj_support}
+%dir %{_libdir}/gcj/%{name}
+%attr(-,root,root) %{_libdir}/gcj/%{name}/*
+%endif
+
