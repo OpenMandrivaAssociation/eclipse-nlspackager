@@ -6,7 +6,7 @@
 
 Name:		eclipse-nlspackager
 Version:	0.1.4
-Release:        %mkrel 2.2
+Release:        %mkrel 2.3
 Epoch:          0
 Summary:	Eclipse NLS package generator
 Group:		Development/Java
@@ -24,8 +24,6 @@ BuildRequires:		java-devel >= 1.4.2
 Requires:		eclipse-rcp
 
 %if %{gcj_support}
-Requires(post): java-gcj-compat
-Requires(postun): java-gcj-compat
 BuildRequires:  java-gcj-compat-devel
 %else
 BuildArch:      noarch
