@@ -15,6 +15,7 @@ URL:		http://wiki.eclipse.org/index.php/Linux_Distributions_Project
 
 Source0:	%{name}-src-%{version}.zip
 
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires:		eclipse-platform
 BuildRequires:		eclipse-pde
