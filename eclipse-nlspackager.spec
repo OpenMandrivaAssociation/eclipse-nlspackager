@@ -1,21 +1,30 @@
-%define gcj_support	1
+# Disable repacking of jars, since it takes forever for all the little jars,
+# and we don't need multilib anyway:
+%define __jar_repack %{nil}
+
+%define gcj_support	0
 
 %define eclipse_name	eclipse
-%define eclipse_base	%{_datadir}/%{eclipse_name}
+%define eclipse_data	%{_datadir}/%{eclipse_name}
+%define oname   eclipse-nls
 
+%define snapshot 20080807snap
 
 Name:		eclipse-nlspackager
-Version:	0.1.4
-Release:        %mkrel 2.3
+Version: 0.2.0
+Release: 0.5.%{snapshot}.%mkrel 1
 Epoch:          0
 Summary:	Eclipse NLS package generator
 Group:		Development/Java
 License:	Eclipse Public License
 URL:		http://wiki.eclipse.org/index.php/Linux_Distributions_Project
 
-Source0:	%{name}-src-%{version}.zip
+Source0: org.eclipse.nls-%{snapshot}-fetched-src.tar.bz2
+Source1: fetch-babel.sh
 
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
+
+BuildArch:  noarch
 
 BuildRequires:		eclipse-platform
 BuildRequires:		eclipse-pde
@@ -31,66 +40,88 @@ BuildRequires:  java-devel
 %endif
 
 %description
-Language pack zips from eclipse.org are grouped by many different
-languages together. However, it is unlikely for a user to use all
-the languages that are included in the package. Instead of making
-users download whole big chunk of language packs for just one language,
-nlspackager breaks down the packages into a single feature/plugin per
-one language.
+Babel language packs include translations for the Eclipse platform and other
+Eclipse-related packages.
+
+%define lang_meta_pkg() \
+%package %1 \
+Summary:    Eclipse/Babel language pack for %2 \
+Group:      Development/Java \
+# provides %{eclipse_data}/dropins \
+Requires:   eclipse-platform >= 3.4.0-18 \
+Obsoletes:  eclipse-sdk-nlspackager-%1 < 3.2.1-4 \
+\
+%description %1 \
+This language pack for %2 contains user-contributed translations of the \
+strings in all Eclipse projects. Please see the http://babel.eclipse.org/ \
+Babel project web pages for a full how-to-use explanation of these \
+translations as well as how you can contribute to \
+the translations of this and future versions of Eclipse. \
+Note that English text will be displayed if Babel doesn't \
+have a translation for a given string. \
+\
+%files %1 \
+%defattr(-,root,root,-) \
+%{eclipse_data}/dropins/babel-%1
+
+# Note that no licence %%doc files are listed under %%files.  Upstream does
+# not provide a single distribution archive for eclipse-nls, but rather an
+# update site which serves up 400 plugin jars for each language.  These
+# jars are collected into a tarball by fetch-babel.sh.  Each jar does
+# include HTML files with licence information, and these jars are placed
+# in the dropins/babel-* directory above.
+
+%lang_meta_pkg cs Czech
+%lang_meta_pkg hu Hungarian
+%lang_meta_pkg pl Polish
+%lang_meta_pkg ru Russian
+%lang_meta_pkg ar Arabic
+# NB 'he' is 'iw' as far as Java is concerned.  fetch-babel.sh knows about it
+%lang_meta_pkg he Hebrew
+%lang_meta_pkg da Danish
+%lang_meta_pkg de German
+%lang_meta_pkg el Greek
+%lang_meta_pkg es Spanish
+%lang_meta_pkg fi Finnish
+%lang_meta_pkg fr French
+%lang_meta_pkg it Italian
+%lang_meta_pkg ja Japanese
+%lang_meta_pkg ko Korean
+%lang_meta_pkg nl Dutch
+%lang_meta_pkg no Norwegian
+%lang_meta_pkg pt Portuguese
+%lang_meta_pkg pt_BR Portuguese (Brazilian)
+%lang_meta_pkg sv Swedish
+%lang_meta_pkg tr Turkish
+%lang_meta_pkg zh Chinese (Simplified)
+%lang_meta_pkg zh_TW Chinese (Traditional)
+##########################################
+# Currently less than 10% coverage
+%lang_meta_pkg uk Ukrainian
+%lang_meta_pkg ro Romanian
+%lang_meta_pkg bg Bulgarian
+##########################################
+##########################################
+# Currently 0% coverage
+#Hindi
+#Klingon
+#Spanish-Catalonian
+#English
+##########################################
 
 %prep
-%setup -q -c -n NLSPackager
-
+%setup -q -n %{oname}
 
 %build
-cp -r %{eclipse_base} SDK
-SDK=$(cd SDK > /dev/null && pwd)
-
-# Eclipse may try to write to the home directory.
-mkdir home
-homedir=$(cd home > /dev/null && pwd)
-
-pushd nlspackager
-	mkdir build
-	# This can go away when package build handles plugins (not just features)
-	echo "<project default=\"main\"><target name=\"main\"></target></project>" \
-	> build/assemble.org.eclipse.linuxtools.nlspackager.all.xml
-	echo "<project default=\"main\"><target name=\"main\"></target></project>" \
-	> build/package.org.eclipse.linuxtools.nlspackager.all.xml
-
-	# Build the langpackager plugin
-	eclipse	\
-	-application org.eclipse.ant.core.antRunner	\
-	-Duser.home=$homedir				\
-	-Dtype=plugin					\
-	-Did=org.eclipse.linuxtools.nlspackager		\
-	-DsourceDirectory=$(pwd)			\
-	-DbaseLocation=$SDK				\
-	-Dbuilder=%{eclipse_base}/plugins/org.eclipse.pde.build/templates/package-build	\
-	-f %{eclipse_base}/plugins/org.eclipse.pde.build/scripts/build.xml
-
-
-	pushd build/plugins/org.eclipse.linuxtools.nlspackager
-
-		eclipse \
-			-application org.eclipse.ant.core.antRunner	\
-			-Duser.home=$homedir				\
-			-DbaseLocation=$SDK				\
-			-f build.xml build.update.jar
-
-		mv org.eclipse.linuxtools.nlspackager_%{version}.jar $SDK/plugins
-	popd
-	
-popd
+# nothing to do
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -D -d -m 755 \
-	$RPM_BUILD_ROOT%{eclipse_base}/plugins/ \
-	$RPM_BUILD_ROOT%{eclipse_base}/features/org.eclipse.linuxtools.nlspackager_%{version}
 
-install -p SDK/plugins/org.eclipse.linuxtools.nlspackager_%{version}.jar \
-	$RPM_BUILD_ROOT%{eclipse_base}/plugins/
+for loc in ?? ??_??; do
+   mkdir -p $RPM_BUILD_ROOT%{eclipse_data}/dropins/babel-${loc}/eclipse
+   cp -R ${loc}/features ${loc}/plugins $RPM_BUILD_ROOT%{eclipse_data}/dropins/babel-${loc}/eclipse
+done
 
 %if %{gcj_support}
 %{_bindir}/aot-compile-rpm
@@ -106,13 +137,3 @@ rm -rf $RPM_BUILD_ROOT
 %postun
 %{clean_gcjdb}
 %endif
-
-%files
-%defattr(0644,root,root,0755)
-%doc nlspackager/LICENSE nlspackager/ChangeLog
-%{eclipse_base}/plugins/org.eclipse.linuxtools.nlspackager_%{version}.jar
-%if %{gcj_support}
-%dir %{_libdir}/gcj/%{name}
-%attr(-,root,root) %{_libdir}/gcj/%{name}/*
-%endif
-
