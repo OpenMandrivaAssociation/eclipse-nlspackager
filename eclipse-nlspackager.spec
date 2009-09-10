@@ -12,7 +12,7 @@
 
 Name:		eclipse-nlspackager
 Version: 0.2.0
-Release: 0.5.%{snapshot}.%mkrel 1
+Release: 0.5.%{snapshot}.%mkrel 2
 Epoch:          0
 Summary:	Eclipse NLS package generator
 Group:		Development/Java
