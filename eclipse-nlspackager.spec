@@ -17,7 +17,7 @@ Epoch:          0
 Summary:	Eclipse NLS package generator
 Group:		Development/Java
 License:	Eclipse Public License
-URL:		http://wiki.eclipse.org/index.php/Linux_Distributions_Project
+URL:		https://wiki.eclipse.org/index.php/Linux_Distributions_Project
 
 Source0: org.eclipse.nls-%{snapshot}-fetched-src.tar.bz2
 Source1: fetch-babel.sh
